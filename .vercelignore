@@ -1,0 +1,8 @@
+/vendor
+.git
+.github
+node_modules
+tests
+.phpunit.result.cache
+phpunit.xml
+
