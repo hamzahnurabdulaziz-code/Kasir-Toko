@@ -1,0 +1,10 @@
+flowchart TD
+    A([Buka alamat web kasir]) --> B[Langsung ke dashboard]
+    B --> C{Pilih menu}
+    C -->|Produk| D[Produk: kelola barang]
+    C -->|Kasir| E[POS: pilih & bayar barang]
+    C -->|Lainnya| F[Stok, pembelian, retur & laporan]
+    D --> G([Kembali dashboard])
+    E --> G
+    F --> G
+

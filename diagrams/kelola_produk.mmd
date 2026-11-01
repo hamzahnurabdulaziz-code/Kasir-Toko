@@ -1,0 +1,18 @@
+flowchart TD
+    Start([Dashboard -> Produk]) --> Action{Pilih tindakan}
+
+    Action -->|Tambah| AddForm[Tambah: isi SKU, nama, harga, stok]
+    AddForm --> ValidCheck{Validasi input & SKU}
+    ValidCheck -->|Tidak| AddForm
+    ValidCheck -->|Ya| SaveAdd[Simpan produk + stok awal + mutasi]
+    SaveAdd --> List([Daftar produk terbarui])
+
+    Action -->|Edit| EditForm[Edit produk & simpan perubahan]
+    EditForm --> List
+
+    Action -->|Hapus| HistCheck{Ada histori transaksi/stok?}
+    HistCheck -->|Ya| SoftDel[Arsip/soft delete]
+    HistCheck -->|Tidak| HardDel[Hapus permanen jika aman]
+    SoftDel --> List
+    HardDel --> List
+

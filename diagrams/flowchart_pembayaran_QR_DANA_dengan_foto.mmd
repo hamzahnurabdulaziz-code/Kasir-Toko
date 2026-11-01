@@ -1,0 +1,11 @@
+flowchart TD
+    A([Buka Web Kasir<br/>tanpa login]) --> B[Pilih barang + hitung total]
+    B --> C[Cek stok, buat invoice PENDING<br/>+ reservasi barang]
+    C --> D[Tampilkan QR Profil DANA asli<br/>+ nominal invoice]
+    D --> E[Pelanggan pindai QR<br/>jika terbukti bisa menerima uang]
+    E --> F[Kasir periksa uang masuk<br/>langsung di aplikasi DANA penerima]
+    F --> G{Nominal & referensi valid?}
+    G -->|Ya| H[Catat konfirmasi manual<br/>+ selesaikan penjualan sekali]
+    H --> I([Stok terpotong + struk keluar])
+    G -->|Tidak| J[BELUM LUNAS<br/>Pertahankan pending / batalkan]
+

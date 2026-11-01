@@ -1,0 +1,312 @@
+// Database Markup Language (DBML)
+// Web Kasir / POS Tanpa Login • QR Profil DANA • Kelola Barang (Versi 4.0)
+
+Table stores {
+  id bigint [pk, increment]
+  name varchar
+  code varchar [unique]
+  address text
+  phone varchar
+  email varchar
+  receipt_prefix varchar [default: 'INV-']
+  receipt_footer text
+  tax_percentage decimal(5,2) [default: 0]
+  timezone varchar [default: 'Asia/Jakarta']
+  qris_merchant_name varchar
+  qris_merchant_id varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table store_settings {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  setting_key varchar
+  setting_value text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table units {
+  id bigint [pk, increment]
+  name varchar
+  symbol varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table categories {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  name varchar
+  description text
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table products {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  category_id bigint [ref: > categories.id]
+  unit_id bigint [ref: > units.id]
+  sku varchar
+  barcode varchar
+  name varchar
+  description text
+  cost_price decimal(15,2)
+  sale_price decimal(15,2)
+  min_stock decimal(14,3) [default: 0]
+  is_active boolean [default: true]
+  track_stock boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table stock_balances {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  product_id bigint [ref: - products.id]
+  on_hand decimal(14,3) [default: 0]
+  reserved decimal(14,3) [default: 0]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table stock_movements {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  product_id bigint [ref: > products.id]
+  type varchar // OPENING, PURCHASE_IN, SALE_OUT, RETURN_IN, ADJUSTMENT
+  qty_delta decimal(14,3)
+  before_qty decimal(14,3)
+  after_qty decimal(14,3)
+  reference_type varchar
+  reference_id bigint
+  note text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table customers {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  name varchar
+  phone varchar
+  email varchar
+  address text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table suppliers {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  name varchar
+  phone varchar
+  email varchar
+  address text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table cashier_shifts {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  terminal_label varchar
+  opened_at timestamp
+  closed_at timestamp
+  opening_cash decimal(15,2)
+  expected_cash decimal(15,2)
+  actual_cash decimal(15,2)
+  status varchar // OPEN, CLOSED
+  note text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table purchases {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  supplier_id bigint [ref: > suppliers.id]
+  purchase_no varchar
+  purchase_date date
+  total_amount decimal(15,2)
+  status varchar // DRAFT, RECEIVED, CANCELLED
+  note text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table purchase_items {
+  id bigint [pk, increment]
+  purchase_id bigint [ref: > purchases.id]
+  product_id bigint [ref: > products.id]
+  quantity decimal(14,3)
+  unit_cost decimal(15,2)
+  subtotal decimal(15,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table sales {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  customer_id bigint [ref: > customers.id]
+  shift_id bigint [ref: > cashier_shifts.id]
+  invoice_no varchar [unique]
+  idempotency_key varchar [unique]
+  subtotal decimal(15,2)
+  discount_amount decimal(15,2) [default: 0]
+  tax_amount decimal(15,2) [default: 0]
+  total_amount decimal(15,2)
+  payment_method varchar // CASH, QRIS, DANA_PROFILE_QR
+  status varchar // PENDING_PAYMENT, COMPLETED, EXPIRED, CANCELLED, PARTIALLY_REFUNDED, REFUNDED
+  note text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table sale_items {
+  id bigint [pk, increment]
+  sale_id bigint [ref: > sales.id]
+  product_id bigint [ref: > products.id]
+  item_name varchar
+  item_sku varchar
+  quantity decimal(14,3)
+  unit_price decimal(15,2)
+  unit_cost decimal(15,2)
+  discount_amount decimal(15,2) [default: 0]
+  subtotal decimal(15,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table stock_reservations {
+  id bigint [pk, increment]
+  sale_id bigint [ref: > sales.id]
+  sale_item_id bigint [ref: > sale_items.id]
+  product_id bigint [ref: > products.id]
+  quantity decimal(14,3)
+  status varchar // RESERVED, COMMITTED, RELEASED
+  reserved_at timestamp
+  released_at timestamp
+  committed_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table qr_payment_profiles {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  name varchar [default: 'QR Profil DANA Pemilik']
+  image_path varchar [default: 'assets/QR_Profil_DANA_Asli.jpeg']
+  image_sha256 varchar
+  qr_type varchar [default: 'PROFILE_QR']
+  phone_number varchar [default: '62-813***2119']
+  scan_test_status varchar [default: 'TESTED']
+  is_active boolean [default: true]
+  notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table payment_intents {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  qr_payment_profile_id bigint [ref: > qr_payment_profiles.id]
+  sale_id bigint [ref: - sales.id]
+  provider varchar [default: 'DANA_PROFILE']
+  method varchar [default: 'DANA_PROFILE_QR']
+  amount decimal(15,2)
+  qr_payload text
+  provider_reference varchar
+  status varchar // CREATED, PENDING, PENDING_MANUAL_CHECK, PAID, EXPIRED, FAILED, CANCELLED
+  expires_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table manual_payment_confirmations {
+  id bigint [pk, increment]
+  sale_id bigint [ref: > sales.id]
+  payment_intent_id bigint [ref: > payment_intents.id]
+  qr_payment_profile_id bigint [ref: > qr_payment_profiles.id]
+  verified_amount decimal(15,2)
+  dana_reference varchar [unique]
+  checked_at timestamp
+  verification_status varchar [default: 'VERIFIED']
+  note text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table payment_transactions {
+  id bigint [pk, increment]
+  payment_intent_id bigint [ref: > payment_intents.id]
+  provider_transaction_id varchar
+  amount decimal(15,2)
+  status varchar
+  raw_payload text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table payment_webhook_events {
+  id bigint [pk, increment]
+  event_dedupe_key varchar [unique]
+  provider varchar
+  payload text
+  processed_at timestamp
+  status varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table refunds {
+  id bigint [pk, increment]
+  sale_id bigint [ref: > sales.id]
+  refund_no varchar [unique]
+  refund_amount decimal(15,2)
+  reason text
+  status varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table refund_items {
+  id bigint [pk, increment]
+  refund_id bigint [ref: > refunds.id]
+  sale_item_id bigint [ref: > sale_items.id]
+  product_id bigint [ref: > products.id]
+  quantity decimal(14,3)
+  unit_price decimal(15,2)
+  restock boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table cash_movements {
+  id bigint [pk, increment]
+  store_id bigint [ref: > stores.id]
+  shift_id bigint [ref: > cashier_shifts.id]
+  type varchar // CASH_IN, CASH_OUT
+  amount decimal(15,2)
+  description text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table audit_logs {
+  id bigint [pk, increment]
+  action varchar
+  entity_type varchar
+  entity_id bigint
+  device_label varchar
+  ip_address varchar
+  payload text
+  created_at timestamp
+  updated_at timestamp
+}
+
